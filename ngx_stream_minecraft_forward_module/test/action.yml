@@ -1,0 +1,215 @@
+name: Run tests for Nginx module ngx_stream_minecraft_forward_module
+description: Run tests for Nginx module ngx_stream_minecraft_forward_module
+
+inputs:
+  build-ref:
+    required: true
+    description: Ref
+    default: "master"
+  nginx-version:
+    required: true
+    description: Nginx version
+  wait-panda:
+    required: false
+    description: Sleep time
+    default: "3"
+  artifact-retention-days:
+    required: false
+    description: Artifact retention days
+    default: "1"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        repository: "NorthRealm/ngx_stream_minecraft_forward_module"
+        ref: ${{ inputs.build-ref }}
+
+    - name: Compile Nginx
+      id: compile
+      shell: bash
+      run: |
+        export COSMETIC_DIR=$(pwd)
+        echo "cosmetic_dir=$COSMETIC_DIR" >> $GITHUB_OUTPUT
+        
+        if [[ "${{ inputs.nginx-version }}" == "CrimsonEdgeHope" ]]; then
+          git clone https://github.com/CrimsonEdgeHope/nginx.git nginx-${{ inputs.nginx-version }}
+          cd nginx-${{ inputs.nginx-version }}
+          cp auto/configure .
+        else
+          wget --no-verbose -O "nginx.tar.gz" "https://nginx.org/download/nginx-${{ inputs.nginx-version }}.tar.gz"
+          tar -xf nginx.tar.gz
+          cd nginx-${{ inputs.nginx-version }}
+        fi
+        
+        chmod +x configure
+        ./configure --add-module=$COSMETIC_DIR --with-stream --with-debug --without-http --with-pcre --with-ld-opt="-lstdc++"
+        make
+        
+        echo "working_dir=$(pwd)" >> $GITHUB_OUTPUT
+
+    - name: Setup Nginx
+      working-directory: ${{ steps.compile.outputs.working_dir }}
+      shell: bash
+      run: |
+        mkdir -p logs
+        touch logs/access.log
+        touch logs/error.log
+        
+        mkdir -p conf || true
+        
+        cp ${{ github.action_path }}/nginx.conf conf/
+        chmod +x objs/nginx
+
+    - name: Run Nginx
+      working-directory: ${{ steps.compile.outputs.working_dir }}
+      shell: bash
+      run: |
+        objs/nginx -V
+        objs/nginx -p $(pwd) -t
+        objs/nginx -p $(pwd) -g "daemon on;"
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: "17"
+        distribution: "temurin"
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    - name: Prepare plugin test suite
+      id: prepare-plugin
+      working-directory: ${{ github.action_path }}/plugin
+      shell: bash
+      run: |
+        ./gradlew build
+        echo "output_dir=$(pwd)/build/libs" >> $GITHUB_OUTPUT
+
+    - name: Setup PandaSpigot
+      id: setup-panda
+      working-directory: ${{ steps.compile.outputs.cosmetic_dir }}
+      shell: bash
+      run: |
+        mkdir -p spigot
+        cd spigot
+
+        export SPIGOT_JAR="spigot.jar"
+        curl -o $SPIGOT_JAR -fsSL https://downloads.hpfxd.com/v2/projects/pandaspigot/versions/1.8.8/builds/latest/downloads/paperclip
+        
+        echo "spigot_jar=$SPIGOT_JAR" >> $GITHUB_OUTPUT
+        echo "working_dir=$(pwd)" >> $GITHUB_OUTPUT
+
+        mkdir -p plugins
+        
+        curl -o plugins/viaversion.jar -fsSL https://github.com/ViaVersion/ViaVersion/releases/download/5.2.1/ViaVersion-5.2.1.jar
+        
+        cp -r ${{ steps.prepare-plugin.outputs.output_dir }}/*.jar plugins/
+        
+        cp -r ${{ github.action_path }}/plugins/ViaVersion plugins/
+        cp ${{ github.action_path }}/bukkit.yml .
+        cp ${{ github.action_path }}/commands.yml .
+        cp ${{ github.action_path }}/eula.txt .
+        cp ${{ github.action_path }}/pandaspigot.yml .
+        cp ${{ github.action_path }}/paper.yml .
+        cp ${{ github.action_path }}/server.properties .
+        cp ${{ github.action_path }}/spigot.yml .
+
+    - name: Run PandaSpigot
+      working-directory: ${{ steps.setup-panda.outputs.working_dir }}
+      shell: bash
+      env:
+        SPIGOT_JAR: ${{ steps.setup-panda.outputs.spigot_jar }}
+      run: |
+        nohup java -jar $SPIGOT_JAR nogui 2>&1 &
+        sleep ${{ inputs.wait-panda }}
+
+    - name: Setup mcping
+      working-directory: ${{ steps.compile.outputs.cosmetic_dir }}
+      shell: bash
+      env:
+        WORKING_DIR: ${{ steps.compile.outputs.cosmetic_dir }}
+      run: ${{ github.action_path }}/setup-mcping.sh
+
+    - name: Run pinging test
+      working-directory: ${{ steps.compile.outputs.cosmetic_dir }}
+      shell: bash
+      run: |
+        protocol_numbers=(
+          763 764 765 766 767 768 769
+          755 756 757 758 759 760 761 762
+          573 575 578 735 736 751 753 754
+          393 401 404 477 480 485 490 498
+          210 315 316 335 338 340
+          47 107 108 109 110
+          3 4 5
+        )
+        
+        export PING_QUERY_COUNT=60
+        export PING_QUERY_ROUNDWAIT=2
+        
+        declare -i max_query_count=$PING_QUERY_COUNT
+        declare -i i_count=0
+        
+        for protocol_i in "${protocol_numbers[@]}"; do
+          i_count=0
+          echo $protocol_i
+          while [ $i_count -le $max_query_count ]; do
+            i_count+=1
+            if ./mcping --host 127.0.0.1 --protocol $protocol_i; then
+              break;
+            elif [[ $i_count -eq $max_query_count ]]; then
+              echo "PING FAILURE."
+              exit 1;
+            fi
+            echo "Retrying"
+            sleep $PING_QUERY_ROUNDWAIT
+          done
+        done
+
+    - name: Setup Node.js 22
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22.x"
+
+    - name: Prepare bot test suite
+      id: prepare-bot
+      working-directory: ${{ github.action_path }}/bot
+      shell: bash
+      run: |
+        yarn install
+        echo "working_dir=$(pwd)" >> $GITHUB_OUTPUT
+
+    - name: Run logging-in test
+      working-directory: ${{ steps.prepare-bot.outputs.working_dir }}
+      shell: bash
+      env:
+        MC_PORT: 25565
+      run: npm run test
+
+    - name: Publish logging-in test report
+      uses: dorny/test-reporter@v2
+      if: ${{ success() || failure() }}
+      with:
+        name: Logging-in test report - Compile and test Nginx version ${{ inputs.nginx-version }} (${{ runner.os }} ${{ runner.arch }}) (${{ github.run_id }})
+        path: ${{ steps.prepare-bot.outputs.working_dir }}/junit.xml
+        reporter: jest-junit
+        list-suites: all
+        list-tests: failed
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: ${{ always() }}
+      with:
+        name: ${{ github.run_id }}-${{ runner.os }}-${{ runner.arch }}-nginx-${{ inputs.nginx-version }}
+        path: |
+          ${{ steps.prepare-bot.outputs.working_dir }}/junit.xml
+          ${{ steps.prepare-plugin.outputs.output_dir }}/*.jar
+          ${{ steps.compile.outputs.working_dir }}
+          ${{ steps.setup-panda.outputs.working_dir }}/crash-reports
+          ${{ steps.setup-panda.outputs.working_dir }}/logs
+        retention-days: ${{ inputs.artifact-retention-days }}
+        overwrite: true
+      continue-on-error: true

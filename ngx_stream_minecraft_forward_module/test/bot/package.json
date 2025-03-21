@@ -1,0 +1,33 @@
+{
+  "name": "ngx-stream-minecraft-forward-module-test-suite",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "test": "mocha --bail --reporter=mocha-multi-reporters --reporter-options configFile=reporters.json",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "mineflayer": "^4.23.0",
+    "nanoid": "^3.3.7",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.8",
+    "@babel/register": "^7.25.7",
+    "@types/chai-as-promised": "^8.0.1",
+    "chai": "^5.1.1",
+    "chai-as-promised": "^8.0.0",
+    "eslint": "^8.56.0",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-mocha": "^10.5.0",
+    "eslint-plugin-n": "^15.0.0 || ^16.0.0 ",
+    "eslint-plugin-promise": "^6.0.0",
+    "mocha": "^10.7.3",
+    "mocha-junit-reporter": "^2.2.1",
+    "mocha-multi-reporters": "^1.5.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

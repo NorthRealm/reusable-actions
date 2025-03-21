@@ -1,0 +1,3 @@
+name: HostnameInspect
+version: 1.0
+main: ngx_stream_minecraft_forward_module.testing.spigot.HostnameInspect

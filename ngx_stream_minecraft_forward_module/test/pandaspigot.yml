@@ -1,0 +1,30 @@
+trackPluginScoreboards: false
+proxyOnlineMode: true
+maxBookPageSize: 2560
+maxBookTotalSizeMultiplier: 0.98
+packetLimiter:
+  kickMessage: "&cSent too many packets."
+  limits:
+    all:
+      interval: 7.0
+      maxPacketRate: 500.0
+logPlayerIpAddresses: true
+worlds:
+  default:
+    timeUpdateFrequency: 100
+    smoothTeleportation: false
+    disablePlayerData: true
+    disableChunkSaving: true
+    disableEntityAi: true
+    randomArrowTrajectory: true
+    knockback:
+      friction: 2.0
+      horizontal: 0.4
+      vertical: 0.4
+      verticalLimit: 0.4000000059604645
+      extraHorizontal: 0.5
+      extraVertical: 0.1
+    optimizeTntMovement: false
+    optimizeLiquidExplosions: true
+    optimizeArmorStandMovement: false
+    randomArrowDamage: true

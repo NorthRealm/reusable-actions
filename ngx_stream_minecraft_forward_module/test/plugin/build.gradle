@@ -1,0 +1,17 @@
+plugins {
+    id "java"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    maven { url = "https://repo.hpfxd.com/releases/" }
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly "com.hpfxd.pandaspigot:pandaspigot-api:1.8.8-R0.1-SNAPSHOT"
+}

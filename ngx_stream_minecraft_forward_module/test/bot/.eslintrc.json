@@ -1,0 +1,39 @@
+{
+    "env": {
+        "browser": false,
+        "node": true,
+        "mocha": true,
+        "es6": true
+    },
+    "root": true,
+    "extends": [
+        "eslint:recommended",
+        "plugin:mocha/recommended"
+    ],
+    "plugins": ["mocha", "import", "n", "promise"],
+    "parserOptions": {
+        "ecmaVersion": 2022,
+        "sourceType": "module"
+    },
+    "ignorePatterns": [
+        "dist/"
+    ],
+    "rules": {
+        "no-alert": "error",
+        "no-console": "error",
+        "max-len": ["warn", { "code": 120 }],
+        "no-useless-return": "error",
+        "semi": ["error", "always"],
+        "comma-style": "error",
+        "quotes": ["error", "double"],
+        "no-multiple-empty-lines": ["error", { "max": 2, "maxEOF": 1 }],
+        "no-empty-function": "error",
+        "no-case-declarations": "warn",
+        "indent": [2, 4, { "SwitchCase": 1 }],
+        "mocha/no-empty-description": "error",
+        "mocha/no-identical-title": "error",
+        "mocha/prefer-arrow-callback": "warn",
+        "mocha/valid-suite-description": "error",
+        "mocha/valid-test-description": "error"
+    }
+}
