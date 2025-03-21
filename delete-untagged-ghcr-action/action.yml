@@ -1,0 +1,24 @@
+name: Delete untagged GHCR images
+description: Delete untagged GHCR images
+
+inputs:
+  token:
+    description: Github token
+    default: ${{ github.token }}
+  repository_owner:
+    description: Repository owner
+    default: ${{ github.repository_owner }}
+  package_name:
+    required: true
+    description: Package name
+
+runs:
+  using: composite
+  steps:
+    - uses: Chizkiyahu/delete-untagged-ghcr-action@4a33ce3cf2456d2aef98a1b6c60a12dad56cffd9
+      with:
+        token: ${{ inputs.token }}
+        repository_owner: ${{ inputs.repository_owner }}
+        package_name: ${{ inputs.package_name }}
+        untagged_only: true
+        owner_type: ${{ github.event.organization && 'org' || 'user' }}
