@@ -55,6 +55,7 @@ runs:
 
     - name: Properties
       id: properties
+      if: ${{ always() }}
       shell: bash
       run: |
         minecraft_version=$(./gradlew properties ${{ inputs.gradle-build-properties }} | grep "^minecraft_version:" | awk '{print $2}')
@@ -83,6 +84,6 @@ runs:
       if: ${{ always() }}
       with:
         name: buildJar-${{ inputs.build-ref }}-${{ github.run_id }}-${{ steps.properties.outputs.minecraft_version }}-${{ steps.properties.outputs.mod_version }}-${{ steps.properties.outputs.fabricloader_version }}
-        path: './build/libs/*.jar'
+        path: "./build/"
         retention-days: ${{ inputs.artifact-retention-days }}
         overwrite: true
