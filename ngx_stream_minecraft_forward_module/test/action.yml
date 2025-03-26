@@ -34,6 +34,7 @@ runs:
       with:
         repository: "NorthRealm/ngx_stream_minecraft_forward_module"
         ref: ${{ inputs.build-ref }}
+        fetch-depth: 0
 
     - name: Compile Nginx
       id: compile
@@ -42,8 +43,8 @@ runs:
         export COSMETIC_DIR=$(pwd)
         echo "cosmetic_dir=$COSMETIC_DIR" >> $GITHUB_OUTPUT
         
-        if [[ "${{ inputs.nginx-version }}" == "NetherRealmSpigot" ]]; then
-          git clone https://github.com/NetherRealmSpigot/nginx.git nginx-${{ inputs.nginx-version }}
+        if [[ ! "${{ inputs.nginx-version }}" =~ 1\.[0-9]{1,2}\.[0-9]{1,2} ]]; then
+          git clone https://github.com/${{ inputs.nginx-version }}/nginx.git nginx-${{ inputs.nginx-version }}
           cd nginx-${{ inputs.nginx-version }}
           cp auto/configure .
         else
@@ -146,7 +147,7 @@ runs:
       shell: bash
       run: |
         protocol_numbers=(
-          763 764 765 766 767 768 769
+          763 764 765 766 767 768 769 770
           755 756 757 758 759 760 761 762
           573 575 578 735 736 751 753 754
           393 401 404 477 480 485 490 498

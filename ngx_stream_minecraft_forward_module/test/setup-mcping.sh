@@ -10,7 +10,7 @@
 
 var_os=""
 var_arch=""
-var_mcping_version="0.0.1"
+var_mcping_version="0.0.2"
 
 case "$RUNNER_OS" in
   Linux)
