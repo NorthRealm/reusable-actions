@@ -1,6 +1,7 @@
 package ngx_stream_minecraft_forward_module.testing.spigot;
 
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -19,16 +20,21 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class HostnameInspect extends JavaPlugin implements Listener {
 
     private final Map<UUID, String> lastHit = new ConcurrentHashMap<>();
+    private String serverName;
 
     @Override
     public void onEnable() {
         this.getServer().getPluginManager().registerEvents(this, this);
+        this.saveDefaultConfig();
+        FileConfiguration configuration = this.getConfig();
+        this.serverName = configuration.getString("server_name");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onJoin(PlayerJoinEvent e) {
         final Player player = e.getPlayer();
-        final String v = String.format("%s joined the game with hostname %s",
+        final String v = String.format("[%s] %s joined the game with hostname %s",
+                this.serverName,
                 player.getName(),
                 lastHit.get(player.getUniqueId()));
         e.setJoinMessage(v);
@@ -41,9 +47,11 @@ public final class HostnameInspect extends JavaPlugin implements Listener {
         this.getServer().getPluginManager().registerEvents(new Listener() {
             @EventHandler(priority = EventPriority.MONITOR)
             public void onQuit(PlayerQuitEvent e) {
-                Bukkit.getScheduler().cancelTask(taskSendMessage.getTaskId());
-                Bukkit.getScheduler().cancelTask(taskKick.getTaskId());
-                HandlerList.unregisterAll(this);
+                if (e.getPlayer().equals(player)) {
+                    Bukkit.getScheduler().cancelTask(taskSendMessage.getTaskId());
+                    Bukkit.getScheduler().cancelTask(taskKick.getTaskId());
+                    HandlerList.unregisterAll(this);
+                }
             }
         }, this);
     }
