@@ -140,7 +140,7 @@ if (cases.length > 0) {
     describe("Testing Nginx", function () {
         // eslint-disable-next-line mocha/no-setup-in-describe
         cases.forEach(c => {
-            it(`using version ${c[0]}, hostname ${c[1]}, expect ${c[2]}`, function () {
+            it(`logging in using version ${c[0]}, hostname ${c[1]}, expect ${c[2]}`, function () {
                 return tf(c[0], c[1], c[2]);
             }).timeout(TIMEOUT).retries(RETRIES);
         });

@@ -16,11 +16,15 @@ inputs:
   viaversion-version:
     required: false
     description: ViaVersion plugin version
-    default: "5.2.1"
+    default: "5.3.1"
   wait-panda:
     required: false
     description: Sleep time
     default: "3"
+  online-mode:
+    required: false
+    description: Online mode
+    default: "false"
   artifact-retention-days:
     required: false
     description: Artifact retention days
@@ -125,6 +129,10 @@ runs:
         cp ${{ github.action_path }}/paper.yml .
         cp ${{ github.action_path }}/server.properties .
         cp ${{ github.action_path }}/spigot.yml .
+        
+        if [[ "${{ inputs.online-mode }}" = true ]]; then
+          sed -i 's/online-mode=false/online-mode=true/g' ./server.properties
+        fi
 
     - name: Run PandaSpigot
       working-directory: ${{ steps.setup-panda.outputs.working_dir }}
@@ -225,7 +233,14 @@ runs:
           ${{ steps.prepare-bot.outputs.working_dir }}/junit.xml
           ${{ steps.prepare-plugin.outputs.output_dir }}/*.jar
           ${{ steps.compile.outputs.working_dir }}
-          ${{ steps.setup-panda.outputs.working_dir }}/crash-reports
-          ${{ steps.setup-panda.outputs.working_dir }}/logs
+          ${{ steps.setup-panda.outputs.working_dir }}/crash-reports/
+          ${{ steps.setup-panda.outputs.working_dir }}/logs/
+          ${{ steps.setup-panda.outputs.working_dir }}/bukkit.yml
+          ${{ steps.setup-panda.outputs.working_dir }}/commands.yml
+          ${{ steps.setup-panda.outputs.working_dir }}/pandaspigot.yml
+          ${{ steps.setup-panda.outputs.working_dir }}/paper.yml
+          ${{ steps.setup-panda.outputs.working_dir }}/server.properties
+          ${{ steps.setup-panda.outputs.working_dir }}/spigot.yml
+          ${{ steps.setup-panda.outputs.working_dir }}/plugins/ViaVersion/
         retention-days: ${{ inputs.artifact-retention-days }}
         overwrite: true
