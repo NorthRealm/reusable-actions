@@ -15,7 +15,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: Chizkiyahu/delete-untagged-ghcr-action@4a33ce3cf2456d2aef98a1b6c60a12dad56cffd9
+    - uses: Chizkiyahu/delete-untagged-ghcr-action@v6.0.0
       with:
         token: ${{ inputs.token }}
         repository_owner: ${{ inputs.repository_owner }}
