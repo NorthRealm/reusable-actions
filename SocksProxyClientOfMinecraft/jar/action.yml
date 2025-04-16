@@ -43,28 +43,34 @@ runs:
         cache: "gradle"
 
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+      uses: gradle/actions/setup-gradle@v4
 
     - name: Build
       shell: bash
-      run: ./gradlew build ${{ inputs.gradle-build-properties }}
-
+      env:
+        GHA_INPUT_GRADLE_BUILD_PROPERTIES: ${{ inputs.gradle-build-properties }}
+      run: ./gradlew build $GHA_INPUT_GRADLE_BUILD_PROPERTIES
     - name: Test
       shell: bash
-      run: ./gradlew test ${{ inputs.gradle-test-properties }}
+      env:
+        GHA_INPUT_GRADLE_TEST_PROPERTIES: ${{ inputs.gradle-test-properties }}
+      run: ./gradlew test $GHA_INPUT_GRADLE_TEST_PROPERTIES
 
     - name: Properties
       id: properties
       if: ${{ always() }}
+      env:
+        GHA_INPUT_GRADLE_BUILD_PROPERTIES: ${{ inputs.gradle-build-properties }}
+        GHA_INPUT_GRADLE_TEST_PROPERTIES: ${{ inputs.gradle-test-properties }}
       shell: bash
       run: |
-        minecraft_version=$(./gradlew properties ${{ inputs.gradle-build-properties }} | grep "^minecraft_version:" | awk '{print $2}')
+        minecraft_version=$(./gradlew properties $GHA_INPUT_GRADLE_BUILD_PROPERTIES | grep "^minecraft_version:" | awk '{print $2}')
         echo "minecraft_version=$minecraft_version" >> $GITHUB_OUTPUT
         
-        fabricloader_version=$(./gradlew properties ${{ inputs.gradle-build-properties }} | grep "^fabricloader_version:" | awk '{print $2}')
+        fabricloader_version=$(./gradlew properties $GHA_INPUT_GRADLE_BUILD_PROPERTIES | grep "^fabricloader_version:" | awk '{print $2}')
         echo "fabricloader_version=$fabricloader_version" >> $GITHUB_OUTPUT
         
-        mod_version=$(./gradlew properties ${{ inputs.gradle-build-properties }} | grep "^mod_version:" | awk '{print $2}')
+        mod_version=$(./gradlew properties $GHA_INPUT_GRADLE_BUILD_PROPERTIES | grep "^mod_version:" | awk '{print $2}')
         echo "mod_version=$mod_version" >> $GITHUB_OUTPUT
 
     - name: Publish Test Report
