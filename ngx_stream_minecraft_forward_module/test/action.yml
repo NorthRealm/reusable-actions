@@ -16,7 +16,7 @@ inputs:
   viaversion-version:
     required: false
     description: ViaVersion plugin version
-    default: "5.3.1"
+    default: "5.3.2"
   wait-panda:
     required: false
     description: Sleep time
@@ -39,22 +39,30 @@ runs:
         repository: "NorthRealm/ngx_stream_minecraft_forward_module"
         ref: ${{ inputs.build-ref }}
         fetch-depth: 0
+    
+    - shell: bash
+      if: ${{ runner.os == 'Windows' }}
+      run: |
+        echo "::error::This action can't run in Windows!"
+        exit 1
 
     - name: Compile Nginx
       id: compile
       shell: bash
+      env:
+        GHA_NGINX_VERSION: ${{ inputs.nginx-version }}
       run: |
         export COSMETIC_DIR=$(pwd)
         echo "cosmetic_dir=$COSMETIC_DIR" >> $GITHUB_OUTPUT
         
-        if [[ ! "${{ inputs.nginx-version }}" =~ 1\.[0-9]{1,2}\.[0-9]{1,2} ]]; then
-          git clone https://github.com/${{ inputs.nginx-version }}/nginx.git nginx-${{ inputs.nginx-version }}
-          cd nginx-${{ inputs.nginx-version }}
+        if [[ ! "$GHA_NGINX_VERSION" =~ 1\.[0-9]{1,2}\.[0-9]{1,2} ]]; then
+          git clone https://github.com/$GHA_NGINX_VERSION/nginx.git nginx-$GHA_NGINX_VERSION
+          cd nginx-$GHA_NGINX_VERSION
           cp auto/configure .
         else
-          wget --no-verbose -O "nginx.tar.gz" "https://nginx.org/download/nginx-${{ inputs.nginx-version }}.tar.gz"
+          wget --no-verbose -O "nginx.tar.gz" "https://nginx.org/download/nginx-$GHA_NGINX_VERSION.tar.gz"
           tar -xf nginx.tar.gz
-          cd nginx-${{ inputs.nginx-version }}
+          cd nginx-$GHA_NGINX_VERSION
         fi
         
         chmod +x configure
@@ -91,7 +99,7 @@ runs:
         distribution: "temurin"
 
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+      uses: gradle/actions/setup-gradle@v4
 
     - name: Prepare plugin test suite
       id: prepare-plugin
@@ -105,19 +113,23 @@ runs:
       id: setup-panda
       working-directory: ${{ steps.compile.outputs.cosmetic_dir }}
       shell: bash
+      env:
+        GHA_PANDA: ${{ inputs.panda }}
+        GHA_PANDA_ONLINE_MODE: ${{ inputs.online-mode }}
+        GHA_VIAVERSION_VERSION: ${{ inputs.viaversion-version }}
       run: |
         mkdir -p spigot
         cd spigot
 
         export SPIGOT_JAR="spigot.jar"
-        curl -o $SPIGOT_JAR -fsSL ${{ inputs.panda }}
+        curl -o $SPIGOT_JAR -fsSL "$GHA_PANDA" 2>&1 > /dev/null
         
         echo "spigot_jar=$SPIGOT_JAR" >> $GITHUB_OUTPUT
         echo "working_dir=$(pwd)" >> $GITHUB_OUTPUT
 
         mkdir -p plugins
         
-        curl -o plugins/viaversion.jar -fsSL "https://github.com/ViaVersion/ViaVersion/releases/download/${{ inputs.viaversion-version }}/ViaVersion-${{ inputs.viaversion-version }}.jar"
+        curl -o plugins/viaversion.jar -fsSL "https://github.com/ViaVersion/ViaVersion/releases/download/$GHA_VIAVERSION_VERSION/ViaVersion-$GHA_VIAVERSION_VERSION.jar"
         
         cp -r ${{ steps.prepare-plugin.outputs.output_dir }}/*.jar plugins/
         
@@ -130,7 +142,7 @@ runs:
         cp ${{ github.action_path }}/server.properties .
         cp ${{ github.action_path }}/spigot.yml .
         
-        if [[ "${{ inputs.online-mode }}" = true ]]; then
+        if [[ "$GHA_PANDA_ONLINE_MODE" = true ]]; then
           sed -i 's/online-mode=false/online-mode=true/g' ./server.properties
         fi
 
@@ -139,9 +151,10 @@ runs:
       shell: bash
       env:
         SPIGOT_JAR: ${{ steps.setup-panda.outputs.spigot_jar }}
+        GHA_WAIT_PANDA: ${{ inputs.wait-panda }}
       run: |
-        nohup java -jar $SPIGOT_JAR nogui 2>&1 &
-        sleep ${{ inputs.wait-panda }}
+        nohup java -jar "$SPIGOT_JAR" nogui 2>&1 &
+        sleep $GHA_WAIT_PANDA
 
     - name: Setup mcping
       working-directory: ${{ steps.compile.outputs.cosmetic_dir }}
