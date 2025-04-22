@@ -10,7 +10,7 @@
 
 var_os=""
 var_arch=""
-var_mcping_version="0.0.2"
+var_mcping_version="0.0.4"
 
 case "$RUNNER_OS" in
   Linux)
@@ -37,5 +37,5 @@ case "$RUNNER_ARCH" in
     ;;
 esac
 
-wget --no-verbose -O "$WORKING_DIR/mcping" "https://github.com/NetherRealmSpigot/mcping/releases/download/v$var_mcping_version/mcping-$var_mcping_version-$var_os-$var_arch"
+wget --no-verbose -O "$WORKING_DIR/mcping" "https://github.com/NetherRealmSpigot/mcping-golang/releases/download/v$var_mcping_version/mcping-golang-$var_mcping_version-$var_os-$var_arch"
 chmod +x "$WORKING_DIR/mcping"
