@@ -16,7 +16,7 @@ inputs:
   viaversion-version:
     required: false
     description: ViaVersion plugin version
-    default: "5.3.2"
+    default: "5.4.0"
   wait-panda:
     required: false
     description: Sleep time
@@ -43,7 +43,7 @@ runs:
     - shell: bash
       if: ${{ runner.os == 'Windows' }}
       run: |
-        echo "::error::This action can't run in Windows!"
+        echo "::error::This action can't run on Windows!"
         exit 1
 
     - name: Compile Nginx
@@ -156,19 +156,33 @@ runs:
         nohup java -jar "$SPIGOT_JAR" nogui 2>&1 &
         sleep $GHA_WAIT_PANDA
 
+    - name: Setup Rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable
+        cache: false
+        override: true
+
+    - name: Install Rust cargos
+      shell: bash
+      run: cargo install cargo-tarpaulin
+
     - name: Setup mcping
       working-directory: ${{ steps.compile.outputs.cosmetic_dir }}
       shell: bash
-      env:
-        WORKING_DIR: ${{ steps.compile.outputs.cosmetic_dir }}
-      run: ${{ github.action_path }}/setup-mcping.sh
+      run: |
+        git clone https://github.com/NetherRealmSpigot/RollingGlass.git mcping_src
+        cd mcping_src
+        make build
+        cp ./target/release/rolling_glass ${{ steps.compile.outputs.cosmetic_dir }}/mcping
+        chmod +x ${{ steps.compile.outputs.cosmetic_dir }}/mcping
 
     - name: Run pinging test
       working-directory: ${{ steps.compile.outputs.cosmetic_dir }}
       shell: bash
       run: |
         protocol_numbers=(
-          763 764 765 766 767 768 769 770
+          763 764 765 766 767 768 769 770 771
           755 756 757 758 759 760 761 762
           573 575 578 735 736 751 753 754
           393 401 404 477 480 485 490 498
