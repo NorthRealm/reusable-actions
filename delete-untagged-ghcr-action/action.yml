@@ -11,6 +11,12 @@ inputs:
   package_name:
     required: true
     description: Package name
+  untagged_only:
+    description: Untagged only
+    default: "true"
+  owner_type:
+    description: Owner type
+    default: ${{ github.event.organization && 'org' || 'user' }}
 
 runs:
   using: composite
@@ -20,5 +26,5 @@ runs:
         token: ${{ inputs.token }}
         repository_owner: ${{ inputs.repository_owner }}
         package_name: ${{ inputs.package_name }}
-        untagged_only: true
-        owner_type: ${{ github.event.organization && 'org' || 'user' }}
+        untagged_only: ${{ inputs.untagged_only }}
+        owner_type: ${{ inputs.owner_type }}
