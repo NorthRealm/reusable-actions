@@ -33,18 +33,18 @@ inputs:
 runs:
   using: composite
   steps:
+    - shell: bash
+      if: ${{ runner.os != 'Linux' }}
+      run: |
+        echo "::error::Run this action on Linux!"
+        exit 1
+
     - name: Checkout
       uses: actions/checkout@v4
       with:
         repository: "NorthRealm/ngx_stream_minecraft_forward_module"
         ref: ${{ inputs.build-ref }}
         fetch-depth: 0
-    
-    - shell: bash
-      if: ${{ runner.os == 'Windows' }}
-      run: |
-        echo "::error::This action can't run on Windows!"
-        exit 1
 
     - name: Compile Nginx
       id: compile
