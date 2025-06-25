@@ -89,7 +89,8 @@ runs:
       uses: actions/upload-artifact@v4
       if: ${{ always() }}
       with:
-        name: buildJar-${{ inputs.build-ref }}-${{ github.run_id }}-${{ steps.properties.outputs.minecraft_version }}-${{ steps.properties.outputs.mod_version }}-${{ steps.properties.outputs.fabricloader_version }}
+        name: buildJar-${{ github.run_id }}-${{ github.run_attempt }}-${{ steps.properties.outputs.minecraft_version }}-${{ steps.properties.outputs.mod_version }}-${{ steps.properties.outputs.fabricloader_version }}
         path: "./build/"
         retention-days: ${{ inputs.artifact-retention-days }}
         overwrite: true
+      continue-on-error: true
