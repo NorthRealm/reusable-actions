@@ -1,0 +1,96 @@
+name: Build Jar for Fabric mod SocksProxyClient
+description: Build Jar for Fabric mod SocksProxyClient
+
+inputs:
+  build-ref:
+    description: Ref
+    required: true
+  java-version:
+    description: Java version
+    required: true
+  java-distribution:
+    description: Java distribution
+    required: false
+    default: "oracle"
+  gradle-build-properties:
+    description: Gradle build properties
+    required: false
+    default: ""
+  gradle-test-properties:
+    description: Gradle test properties
+    required: false
+    default: ""
+  artifact-retention-days:
+    description: Jar artifact retention days
+    required: false
+    default: "1"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        repository: "NorthRealm/SocksProxyClientOfMinecraft-1.1"
+        ref: ${{ inputs.build-ref }}
+        fetch-depth: 0
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: ${{ inputs.java-distribution }}
+        cache: "gradle"
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: Build
+      shell: bash
+      env:
+        GHA_INPUT_GRADLE_BUILD_PROPERTIES: ${{ inputs.gradle-build-properties }}
+      run: ./gradlew build $GHA_INPUT_GRADLE_BUILD_PROPERTIES
+    - name: Test
+      shell: bash
+      env:
+        GHA_INPUT_GRADLE_TEST_PROPERTIES: ${{ inputs.gradle-test-properties }}
+      run: ./gradlew test $GHA_INPUT_GRADLE_TEST_PROPERTIES
+
+    - name: Properties
+      id: properties
+      if: ${{ always() }}
+      env:
+        GHA_INPUT_GRADLE_BUILD_PROPERTIES: ${{ inputs.gradle-build-properties }}
+        GHA_INPUT_GRADLE_TEST_PROPERTIES: ${{ inputs.gradle-test-properties }}
+      shell: bash
+      run: |
+        minecraft_version=$(./gradlew properties $GHA_INPUT_GRADLE_BUILD_PROPERTIES | grep "^minecraft_version:" | awk '{print $2}')
+        echo "minecraft_version=$minecraft_version" >> $GITHUB_OUTPUT
+        
+        fabricloader_version=$(./gradlew properties $GHA_INPUT_GRADLE_BUILD_PROPERTIES | grep "^fabricloader_version:" | awk '{print $2}')
+        echo "fabricloader_version=$fabricloader_version" >> $GITHUB_OUTPUT
+        
+        mod_version=$(./gradlew properties $GHA_INPUT_GRADLE_BUILD_PROPERTIES | grep "^mod_version:" | awk '{print $2}')
+        echo "mod_version=$mod_version" >> $GITHUB_OUTPUT
+
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@v5
+      if: ${{ success() || failure() }}
+      with:
+        report_paths: './build/test-results/test/TEST-*.xml'
+        include_passed: true
+        detailed_summary: true
+        fail_on_failure: true
+        require_tests: true
+        check_name: Test Report (Minecraft ${{ steps.properties.outputs.minecraft_version }}, Mod version ${{ steps.properties.outputs.mod_version }}, FabricLoader ${{ steps.properties.outputs.fabricloader_version }})
+        check_title_template: '{{SUITE_NAME}} | {{TEST_NAME}}'
+
+    - name: Upload jar artifact
+      uses: actions/upload-artifact@v4
+      if: ${{ always() }}
+      with:
+        name: buildJar-${{ github.run_id }}-${{ github.run_attempt }}-${{ steps.properties.outputs.minecraft_version }}-${{ steps.properties.outputs.mod_version }}-${{ steps.properties.outputs.fabricloader_version }}
+        path: "./build/"
+        retention-days: ${{ inputs.artifact-retention-days }}
+        overwrite: true
+      continue-on-error: true

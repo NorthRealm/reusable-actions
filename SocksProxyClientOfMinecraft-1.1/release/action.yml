@@ -1,0 +1,63 @@
+name: Publish release for Fabric mod SocksProxyClient
+description: Publish release for Fabric mod SocksProxyClient
+
+inputs:
+  tag-ref:
+    description: Tag ref
+    required: true
+  java-version:
+    description: Java version
+    required: true
+  java-distribution:
+    description: Java distribution
+    required: false
+    default: "oracle"
+  token:
+    description: Modrinth token
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        repository: "NorthRealm/SocksProxyClientOfMinecraft-1.1"
+        ref: ${{ inputs.tag-ref }}
+        fetch-depth: 0
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: "${{ inputs.java-version }}"
+        distribution: "${{ inputs.java-distribution }}"
+        cache: "gradle"
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: Gradle build
+      shell: bash
+      run: ./gradlew build
+
+    - name: Changelog body
+      id: get_changelog_body
+      run: |
+        touch tmp_changelog_body.txt
+        echo "$(./gradlew getChangelog --no-empty-sections --console=plain --quiet)" > tmp_changelog_body.txt
+      shell: bash
+
+    - name: Create release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: ${{ github.ref_name }}
+        body_path: tmp_changelog_body.txt
+        prerelease: ${{ contains(github.event.head_commit.message, '[prerelease]') }}
+        files: |
+          build/libs/*-SNAPSHOT.jar
+
+    - name: Publish to Modrinth
+      shell: bash
+      run: ./gradlew modrinth -Pverbose=true
+      env:
+        MODRINTH_TOKEN: ${{ inputs.token }}
